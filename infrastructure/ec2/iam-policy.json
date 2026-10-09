@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "UploadsBucketObjects",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::REPLACE_BUCKET_NAME/*"
+    },
+    {
+      "Sid": "CognitoUserAdminForThisPoolOnly",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:AdminConfirmSignUp",
+        "cognito-idp:AdminAddUserToGroup",
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminSetUserPassword"
+      ],
+      "Resource": "arn:aws:cognito-idp:REPLACE_REGION:REPLACE_ACCOUNT_ID:userpool/REPLACE_USER_POOL_ID"
+    }
+  ]
+}

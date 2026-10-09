@@ -1,0 +1,5 @@
+# Replace with your server's public IP using dashes, e.g. 203.0.113.10 -> 203-0-113-10.nip.io
+# (or use your own domain). Caddy obtains and renews the HTTPS certificate automatically.
+203-0-113-10.nip.io {
+    reverse_proxy localhost:4000
+}

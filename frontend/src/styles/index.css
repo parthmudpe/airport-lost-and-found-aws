@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; }
+body { @apply bg-mist-50 text-runway-900 font-sans antialiased; }h1, h2, h3 { font-family: 'Inter', sans-serif; }
+.font-display { font-family: 'Inter', sans-serif; }
+
+.focus-ring { @apply outline-none focus-visible:ring-2 focus-visible:ring-signal-500 focus-visible:ring-offset-2; }
+
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-primary { @apply btn bg-signal-500 text-white hover:bg-signal-600; }
+.btn-secondary { @apply btn bg-white text-runway-900 border border-mist-200 hover:bg-mist-100; }
+.btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
+.btn-ghost { @apply btn text-runway-700 hover:bg-mist-100; }
+
+.card { @apply bg-white border border-mist-200 rounded-lg shadow-sm; }
+.input { @apply w-full rounded-md border border-mist-200 px-3 py-2 text-sm focus-ring; }
+.label { @apply block text-sm font-medium text-runway-800 mb-1; }
+
+.badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+.badge-neutral { @apply badge bg-mist-100 text-runway-700; }
+.badge-info { @apply badge bg-blue-50 text-blue-700; }
+.badge-warn { @apply badge bg-amber-400/20 text-amber-500; }
+.badge-success { @apply badge bg-signal-500/10 text-signal-600; }
+.badge-danger { @apply badge bg-red-50 text-red-700; }

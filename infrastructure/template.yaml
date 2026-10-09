@@ -1,0 +1,334 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Airport Lost & Found Management System — serverless AWS deployment.
+  This template provisions the production architecture described in
+  docs/architecture.md: API Gateway + Lambda (wrapping the same Express
+  app in backend/), DynamoDB, S3, Cognito, SNS and CloudWatch alarms.
+  It is a reference template for an academic deployment — review IAM
+  scoping and remove NONE/placeholder values before using it for real
+  traffic.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  SesFromEmail:
+    Type: String
+    Description: Verified SES sender address for notification emails.
+    Default: ''
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 15
+    MemorySize: 256
+    Environment:
+      Variables:
+        NODE_ENV: production
+        DB_PROVIDER: dynamodb
+        STORAGE_PROVIDER: s3
+        AUTH_PROVIDER: cognito
+        NOTIFICATION_PROVIDER: ses_sns
+        DYNAMO_TABLE_PREFIX: !Sub 'LostFound-${Stage}-'
+        S3_BUCKET_NAME: !Ref AssetsBucket
+        SNS_TOPIC_ARN: !Ref NotificationsTopic
+        SES_FROM_EMAIL: !Ref SesFromEmail
+        COGNITO_USER_POOL_ID: !Ref UserPool
+        COGNITO_CLIENT_ID: !Ref UserPoolClient
+
+Resources:
+  # ---------------- API ----------------
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'" # tighten to the CloudFront/Amplify domain in production
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.handler
+      CodeUri: ../backend/
+      Description: Express app (backend/src) wrapped for Lambda via aws-serverless-express / serverless-http.
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Sub 'LostFound-${Stage}-*'
+        - S3CrudPolicy:
+            BucketName: !Ref AssetsBucket
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt NotificationsTopic.TopicName
+        - SESCrudPolicy:
+            IdentityName: !Ref SesFromEmail
+      Events:
+        AnyApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /{proxy+}
+            Method: ANY
+
+  # ---------------- Storage ----------------
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'airport-lost-found-assets-${Stage}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [GET, PUT, POST]
+            AllowedOrigins: ['*'] # tighten to the frontend origin in production
+            AllowedHeaders: ['*']
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+
+  # ---------------- Database (DynamoDB, single-table-per-entity for clarity) ----------------
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-Users'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection: { ProjectionType: ALL }
+
+  LostItemsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-LostItems'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: airportId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ByUser
+          KeySchema: [{ AttributeName: userId, KeyType: HASH }]
+          Projection: { ProjectionType: ALL }
+        - IndexName: ByAirport
+          KeySchema: [{ AttributeName: airportId, KeyType: HASH }]
+          Projection: { ProjectionType: ALL }
+
+  FoundItemsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-FoundItems'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: airportId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ByAirport
+          KeySchema: [{ AttributeName: airportId, KeyType: HASH }]
+          Projection: { ProjectionType: ALL }
+
+  MatchesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-Matches'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: lostItemId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ByLostItem
+          KeySchema: [{ AttributeName: lostItemId, KeyType: HASH }]
+          Projection: { ProjectionType: ALL }
+
+  OwnershipVerificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-OwnershipVerifications'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  NotificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-Notifications'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ByUser
+          KeySchema: [{ AttributeName: userId, KeyType: HASH }]
+          Projection: { ProjectionType: ALL }
+
+  AuditLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-AuditLogs'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  AirportsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'LostFound-${Stage}-Airports'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # ---------------- Auth ----------------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub 'airport-lost-found-${Stage}'
+      AutoVerifiedAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireNumbers: true
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: custom:role
+          AttributeDataType: String
+          Mutable: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  StaffGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: STAFF
+      UserPoolId: !Ref UserPool
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: ADMIN
+      UserPoolId: !Ref UserPool
+  PassengerGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: PASSENGER
+      UserPoolId: !Ref UserPool
+
+  # ---------------- Notifications ----------------
+  NotificationsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'airport-lost-found-notifications-${Stage}'
+
+  # ---------------- Monitoring ----------------
+  ApiErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'LostFound-${Stage}-Api5xxErrors'
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub '${Api}'
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'LostFound-${Stage}-LambdaErrors'
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ApiFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  ApiUrl:
+    Description: Invoke URL for the deployed API
+    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/'
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  AssetsBucketName:
+    Value: !Ref AssetsBucket
+  NotificationsTopicArn:
+    Value: !Ref NotificationsTopic

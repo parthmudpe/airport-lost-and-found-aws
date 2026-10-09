@@ -1,0 +1,14 @@
+[Unit]
+Description=Airport Lost & Found API
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/airport-lost-found/backend
+EnvironmentFile=/opt/airport-lost-found/backend/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
