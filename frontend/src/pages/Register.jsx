@@ -24,12 +24,12 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-mist-50 dark:bg-runway-950 px-4 transition-colors duration-200">
+    <div className="min-h-screen flex items-center justify-center bg-mist-50 px-4">
       <div className="w-full max-w-sm">
-        <p className="font-display text-xl font-bold text-center mb-1 text-runway-900 dark:text-mist-50">Skyway Lost &amp; Found</p>
-        <p className="text-center text-sm text-runway-700 dark:text-mist-400 mb-6">Create a passenger account</p>
+        <p className="font-display text-xl font-bold text-center mb-1">Skyway Lost &amp; Found</p>
+        <p className="text-center text-sm text-runway-700 mb-6">Create a passenger account</p>
         <form onSubmit={onSubmit} className="card p-6 space-y-4">
-          {error && <p className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 rounded-md px-3 py-2">{error}</p>}
+          {error && <p className="text-sm text-red-700 bg-red-50 rounded-md px-3 py-2">{error}</p>}
           <div>
             <label className="label" htmlFor="fullName">Full name</label>
             <input id="fullName" required className="input" value={form.fullName}
@@ -49,12 +49,12 @@ export default function Register() {
             <label className="label" htmlFor="password">Password</label>
             <input id="password" type="password" minLength={8} required className="input" value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })} />
-            <p className="text-xs text-runway-700 dark:text-mist-400 mt-1">At least 8 characters.</p>
+            <p className="text-xs text-runway-700 mt-1">At least 8 characters.</p>
           </div>
           <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? 'Creating account…' : 'Create account'}</button>
         </form>
-        <p className="text-center text-sm text-runway-700 dark:text-mist-400 mt-4">
-          Already have an account? <Link to="/login" className="text-signal-600 dark:text-signal-400 hover:text-signal-500 font-medium">Sign in</Link>
+        <p className="text-center text-sm text-runway-700 mt-4">
+          Already have an account? <Link to="/login" className="text-signal-600 font-medium">Sign in</Link>
         </p>
       </div>
     </div>

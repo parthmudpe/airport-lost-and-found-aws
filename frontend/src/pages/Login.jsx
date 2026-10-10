@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -26,34 +27,61 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-mist-50 dark:bg-runway-950 px-4 transition-colors duration-200">
+    <div className="min-h-screen flex items-center justify-center bg-mist-50 px-4">
       <div className="w-full max-w-sm">
-        <p className="font-display text-xl font-bold text-center mb-1 text-runway-900 dark:text-mist-50">Skyway Lost &amp; Found</p>
-        <p className="text-center text-sm text-runway-700 dark:text-mist-400 mb-6">Sign in to your account</p>
+        <p className="font-display text-xl font-bold text-center mb-1">
+          Skyway Lost &amp; Found
+        </p>
+        <p className="text-center text-sm text-runway-700 mb-6">
+          Sign in to your account
+        </p>
+
         <form onSubmit={onSubmit} className="card p-6 space-y-4">
-          {error && <p className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 rounded-md px-3 py-2">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-700 bg-red-50 rounded-md px-3 py-2">
+              {error}
+            </p>
+          )}
+
           <div>
             <label className="label" htmlFor="email">Email</label>
-            <input id="email" type="email" required className="input" value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <input
+              id="email"
+              type="email"
+              required
+              className="input"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
           </div>
+
           <div>
             <label className="label" htmlFor="password">Password</label>
-            <input id="password" type="password" required className="input" value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <input
+              id="password"
+              type="password"
+              required
+              className="input"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
           </div>
-          <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? 'Signing in…' : 'Sign in'}</button>
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="btn-primary w-full"
+          >
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
         </form>
-        <p className="text-center text-sm text-runway-700 dark:text-mist-400 mt-4">
-          New passenger? <Link to="/register" className="text-signal-600 dark:text-signal-400 hover:text-signal-500 font-medium">Create an account</Link>
+
+        <p className="text-center text-sm text-runway-700 mt-4">
+          New passenger?{' '}
+          <Link to="/register" className="text-signal-600 font-medium">
+            Create an account
+          </Link>
         </p>
-        <div className="mt-6 text-xs text-runway-700 dark:text-mist-300 bg-mist-100 dark:bg-runway-800/50 rounded-md p-3 border border-mist-200 dark:border-runway-700">
-          <p className="font-semibold mb-1 text-runway-900 dark:text-mist-100">Demo credentials</p>
-          <p>Admin: admin@airportlf.com</p>
-          <p>Staff: staff.jfk@airportlf.com</p>
-          <p>Passenger: passenger1@example.com</p>
-          <p>Password for all: Passw0rd!</p>
-        </div>
       </div>
     </div>
   );
