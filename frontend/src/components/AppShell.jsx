@@ -31,12 +31,14 @@ export default function AppShell({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   function handleLogout() {
+    setMenuOpen(false);
     logout();
     navigate('/login');
   }
 
   return (
-    <div className="min-h-screen bg-mist-50 md:flex">
+    <div className="min-h-screen bg-mist-50">
+      {/* Mobile backdrop */}
       {menuOpen && (
         <button
           type="button"
@@ -46,25 +48,34 @@ export default function AppShell({ children }) {
         />
       )}
 
+      {/* Fixed sidebar: always covers the full viewport height */}
       <aside
-        className={`${
-          menuOpen ? 'flex' : 'hidden'
-        } fixed inset-y-0 left-0 z-40 w-64 shrink-0 flex-col
+        className={`
+          ${menuOpen ? 'flex' : 'hidden'}
+          fixed inset-y-0 left-0 z-40
+          h-screen w-64 max-w-[85vw] shrink-0 flex-col overflow-hidden
           bg-runway-900 text-mist-50 shadow-xl
-          md:static md:flex md:h-screen md:shadow-none`}
+          md:flex md:h-screen md:max-h-screen md:shadow-none
+        `}
       >
-        <div className="border-b border-white/10 px-5 py-6">
+        {/* Sidebar header */}
+        <div className="shrink-0 border-b border-white/10 px-5 py-6">
           <p className="font-display text-xl font-extrabold tracking-tight">
             Skyway
           </p>
+
           <p className="mt-1 text-xs tracking-wide text-mist-200/70">
             AIRPORT LOST &amp; FOUND
           </p>
         </div>
 
+        {/* Navigation scrolls independently */}
         <nav
           aria-label="Main navigation"
-          className="flex-1 space-y-1 overflow-y-auto px-3 py-5"
+          className="
+            min-h-0 flex-1 space-y-1 overflow-x-hidden
+            overflow-y-auto overscroll-contain px-3 py-5
+          "
         >
           <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-mist-200/50">
             Workspace
@@ -89,14 +100,17 @@ export default function AppShell({ children }) {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-4">
+        {/* Account details and logout stay at the bottom */}
+        <div className="shrink-0 border-t border-white/10 p-4">
           <div className="mb-3 rounded-lg bg-white/5 p-3">
             <p className="truncate text-sm font-semibold">
               {user?.fullName}
             </p>
+
             <p className="mt-1 truncate text-xs text-mist-200/60">
               {user?.email}
             </p>
+
             <p className="mt-2 inline-flex rounded-full bg-white/10 px-2 py-1 text-xs font-semibold">
               {user?.role}
             </p>
@@ -105,22 +119,27 @@ export default function AppShell({ children }) {
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold
+            className="
+              w-full rounded-lg px-3 py-2 text-left text-sm font-semibold
               text-amber-400 transition hover:bg-white/10 hover:text-amber-300
               focus-visible:outline-none focus-visible:ring-2
-              focus-visible:ring-amber-400"
+              focus-visible:ring-amber-400
+            "
           >
             Log out
           </button>
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1">
+      {/* Main content starts to the right of the fixed sidebar */}
+      <main className="min-w-0 md:ml-64">
         <header
-          className="sticky top-0 z-20 flex min-h-16 items-center justify-between
+          className="
+            sticky top-0 z-20 flex min-h-16 items-center justify-between
             gap-3 border-b border-mist-200 bg-white/90 px-4 py-3
             backdrop-blur-md sm:px-6 dark:border-slate-700
-            dark:bg-slate-900/90"
+            dark:bg-slate-900/90
+          "
         >
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -128,10 +147,12 @@ export default function AppShell({ children }) {
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              className="rounded-lg border border-mist-200 px-3 py-2
+              className="
+                rounded-lg border border-mist-200 px-3 py-2
                 text-sm font-semibold text-runway-800 hover:bg-mist-100
                 md:hidden dark:border-slate-600 dark:text-slate-100
-                dark:hover:bg-slate-800"
+                dark:hover:bg-slate-800
+              "
             >
               {menuOpen ? 'Close' : 'Menu'}
             </button>
@@ -144,6 +165,7 @@ export default function AppShell({ children }) {
                     ? 'Airport staff portal'
                     : 'Administration portal'}
               </p>
+
               <p className="hidden text-xs text-runway-700 sm:block dark:text-slate-400">
                 Lost &amp; Found Management System
               </p>
