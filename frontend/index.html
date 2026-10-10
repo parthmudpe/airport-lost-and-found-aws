@@ -7,6 +7,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Franklin:wght@600;700;800&display=swap" rel="stylesheet" />
     <title>Skyway Lost &amp; Found</title>
+    <script>
+  (function () {
+    try {
+      const savedTheme = localStorage.getItem('lf-theme');
+      const prefersDark =
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      document.documentElement.classList.toggle(
+        'dark',
+        savedTheme === 'dark' || (!savedTheme && prefersDark)
+      );
+    } catch (error) {
+      // Keep the default theme if browser storage is unavailable.
+    }
+  })();
+</script>
   </head>
   <body>
     <div id="root"></div>

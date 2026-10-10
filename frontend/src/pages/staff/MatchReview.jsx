@@ -9,6 +9,7 @@ import { useToast } from '../../components/Toast.jsx';
 const TABS = [
   { key: 'PENDING_REVIEW', label: 'Pending review' },
   { key: 'OWNERSHIP_PENDING', label: 'Ownership verification' },
+  { key: 'OWNERSHIP_VERIFIED', label: 'Ready to return' },
   { key: 'COMPLETED', label: 'Returned' },
 ];
 
@@ -113,7 +114,13 @@ function MatchCard({ match, tab, onChanged, toast }) {
             <button className="btn-primary" onClick={() => setConfirmOpen(true)}>Confirm match</button>
           </div>
         )}
-        {tab === 'OWNERSHIP_PENDING' && <OwnershipReview matchId={match.id} onChanged={onChanged} toast={toast} />}
+        {['OWNERSHIP_PENDING', 'OWNERSHIP_VERIFIED'].includes(tab) && (
+          <OwnershipReview
+            matchId={match.id}
+            onChanged={onChanged}
+            toast={toast}
+          />
+        )}
       </div>
 
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Confirm this match?"
