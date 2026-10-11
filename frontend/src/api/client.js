@@ -33,6 +33,8 @@ export const Api = {
   airports: () => client.get('/airports').then((r) => r.data.airports),
 
   createLostItem: (formData) => client.post('/lost-items', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  getPhotoUrl: (key) => client.get('/files/signed-url', { params: { key } }).then((r) => r.data),
+  getPhotoBlob: (key) => client.get(`/files/${key.split('/').map(encodeURIComponent).join('/')}`, { responseType: 'blob' }).then((r) => r.data),
   myLostItems: () => client.get('/lost-items').then((r) => r.data.items),
   searchLostItems: (params) => client.get('/lost-items', { params }).then((r) => r.data),
   getLostItem: (id) => client.get(`/lost-items/${id}`).then((r) => r.data.lostItem),

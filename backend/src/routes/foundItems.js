@@ -11,7 +11,7 @@ const { findCandidateMatches } = require('../services/matchingService');
 const { audit } = require('../services/auditService');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
 const foundItemSchema = z.object({
   category: z.string().min(1),
